@@ -1,13 +1,16 @@
 import 'package:audio_session/audio_session.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:radio/common.dart';
 import 'package:radio/lottiescreen.dart';
+import 'package:radio/neu_box.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 class RadioUi extends StatefulWidget {
   const RadioUi({Key? key}) : super(key: key);
@@ -16,9 +19,10 @@ class RadioUi extends StatefulWidget {
   State<RadioUi> createState() => _RadioUiState();
 }
 
+bool isPlaying = false;
+
 class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
   final _player = AudioPlayer();
-
   @override
   void initState() {
     super.initState();
@@ -27,9 +31,12 @@ class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
     //   statusBarColor: Colors.black,
     // ));
     _init();
+    FlutterNativeSplash.remove();
   }
 
   Future<void> _init() async {
+    await FirebaseMessaging.instance.subscribeToTopic("zionwayradioPush");
+
     // Inform the operating system of our app's audio attributes etc.
     // We pick a reasonable default for an app that plays speech.
     final session = await AudioSession.instance;
@@ -43,13 +50,13 @@ class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
     try {
       // AAC example: https://dl.espressif.com/dl/audio/ff-16b-2c-44100hz.aac
       await _player.setAudioSource(AudioSource.uri(
-        Uri.parse("https://stream.zeno.fm/n88bnx2a0xhvv"),
+        Uri.parse("https://stream.zeno.fm/efqmvwf2d8ptv"),
         tag: MediaItem(
           // Specify a unique ID for each media item:
           id: '1',
           // Metadata to display in the notification:
           album: "Playing",
-          title: "Faith Radio",
+          title: "ZionWay Radio",
           artUri: Uri.parse(
               'https://firebasestorage.googleapis.com/v0/b/notify-cc847.appspot.com/o/zion%20radio.jpeg?alt=media&token=62123633-b815-4e57-bb53-2a208fb06477'),
         ),
@@ -90,11 +97,22 @@ class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.deepPurple[800],
+        backgroundColor: Color.fromARGB(255, 39, 101, 160),
         title: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 70),
-          child: Container(
-            child: Text('Faith Radio'),
+          child: Row(
+            children: [
+              Container(
+                child: Text('ZW'),
+              ),
+              Container(
+                child: Text(
+                  ' Radio',
+                  style: TextStyle(
+                      color: Colors.white, fontFamily: 'AkayaTelivigala'),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -107,12 +125,12 @@ class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
           padding: EdgeInsets.zero,
           children: <Widget>[
             UserAccountsDrawerHeader(
-              accountName: Text("Faith Radio"),
+              accountName: Text("Zion-Way Radio"),
               accountEmail: Text("Connect with us"),
               currentAccountPicture: CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Text(
-                  "FR",
+                  "ZR",
                   style: TextStyle(fontSize: 40.0),
                 ),
               ),
@@ -136,32 +154,14 @@ class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
               },
             ),
             ListTile(
-              leading:
-                  FaIcon(FontAwesomeIcons.youtube, color: Colors.red, size: 30),
-              title: const Text(
-                'Youtube',
-              ),
-              onTap: () async {
-                final Uri url = Uri.parse(
-                    'https://www.youtube.com/channel/UCimib4j_ayASl-1jPbFsNyg');
-
-                if (await canLaunchUrl(url)) {
-                  await launchUrl(url);
-                } else {
-                  throw 'Could not launch $url';
-                }
-                Navigator.pop(context);
-              },
-            ),
-            ListTile(
               leading: FaIcon(FontAwesomeIcons.instagram,
                   color: Colors.red, size: 30),
               title: const Text(
                 'Instagram',
               ),
               onTap: () async {
-                final Uri url =
-                    Uri.parse('https://www.instagram.com/official_waterradio/');
+                final Uri url = Uri.parse(
+                    'https://instagram.com/zionwayradio?igshid=YmMyMTA2M2Y=');
 
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url);
@@ -179,7 +179,8 @@ class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
               ),
               // image: Image.asset('lib/icons/facebook.png'),
               onTap: () async {
-                final Uri url = Uri.parse('https://twitter.com/waterradio3');
+                final Uri url = Uri.parse(
+                    'https://twitter.com/zionwayradio?t=HiJ7uMYuSSHPnYn7PPEnSg&s=09');
 
                 if (await canLaunchUrl(url)) {
                   await launchUrl(url);
@@ -192,96 +193,119 @@ class _RadioUiState extends State<RadioUi> with WidgetsBindingObserver {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          Container(
-            decoration: BoxDecoration(color: Color.fromARGB(255, 189, 61, 189)),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset('lib/images/zionradio.jpg'),
-            ),
-          ),
-          Container(
-            child: Expanded(
-                child: SizedBox(
+      body: SafeArea(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [0.1, 0.4, 0.7, 0.9],
-                    colors: [
-                      Color(0xFF3594DD),
-                      Color(0xFF4563DB),
-                      Color(0xFF5036D5),
-                      Color(0xFF5816DB),
+                // decoration:
+                //     BoxDecoration(color: Color.fromARGB(255, 189, 61, 189)),
+                child: ClipRRect(
+                  // borderRadius: BorderRadius.circular(8),
+                  child: Image.asset('lib/images/zionradio.jpeg'),
+                ),
+              ),
+            ),
+            Container(
+              child: Expanded(
+                  child: SizedBox(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      stops: [0.1, 0.4, 0.7, 0.9],
+                      colors: [
+                        Color(0xFF3594DD),
+                        Color(0xFF4563DB),
+                        Color(0xFF4563DB),
+                        Colors.blue,
+                      ],
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      Column(
+                        children: [
+                          Text(
+                            'ZionWay',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 25,
+                                fontWeight: FontWeight.w200),
+                          ),
+                          Text(
+                            '...reaching for Christ',
+                            style: TextStyle(
+                                shadows: <Shadow>[
+                                  Shadow(
+                                    offset: Offset(6.0, 6.0),
+                                    blurRadius: 3.0,
+                                    color: Color.fromARGB(255, 0, 0, 0),
+                                  ),
+                                  Shadow(
+                                    offset: Offset(40.0, 40.0),
+                                    blurRadius: 8.0,
+                                    color: Color.fromARGB(125, 0, 0, 255),
+                                  ),
+                                ],
+                                letterSpacing: 3,
+                                color: Colors.white,
+                                fontFamily: 'AkayaTelivigala',
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16),
+                          ),
+                        ],
+                      ),
+                      NewBox(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Text(
+                              'on air',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                            Icon(
+                              Icons.shuffle,
+                              color: Colors.white,
+                            ),
+                            // Icon(
+                            //   Icons.repeat,
+                            //   color: Colors.white,
+                            // ),
+                            LottieScreen(),
+                            StreamBuilder<PositionData>(
+                              stream: positionDataStream,
+                              builder: (context, snapshot) {
+                                final positionData = snapshot.data;
+                                // print(positionData?.position);
+                                // return SeekBar(
+                                //   duration: positionData?.duration ?? Duration.zero,
+                                //   position: positionData?.position ?? Duration.zero,
+                                //   bufferedPosition:
+                                //       positionData?.bufferedPosition ??
+                                //           Duration.zero,
+                                //   onChangeEnd: _player.seek,
+                                // );
+                                return Text("00:00",
+                                    style: TextStyle(color: Colors.white));
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      ControlButtons(_player),
                     ],
                   ),
+                  // color: Colors.deepPurple,
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    Column(
-                      children: [
-                        Text(
-                          'Faith',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 25,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          'the substance of things hoped for',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontFamily: 'AkayaTelivigala'),
-                        ),
-                      ],
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Text(
-                          'off air',
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        Icon(
-                          Icons.shuffle,
-                          color: Colors.white,
-                        ),
-                        // Icon(
-                        //   Icons.repeat,
-                        //   color: Colors.white,
-                        // ),
-                        LottieScreen(),
-                        StreamBuilder<PositionData>(
-                          stream: positionDataStream,
-                          builder: (context, snapshot) {
-                            final positionData = snapshot.data;
-                            // print(positionData?.position);
-                            // return SeekBar(
-                            //   duration: positionData?.duration ?? Duration.zero,
-                            //   position: positionData?.position ?? Duration.zero,
-                            //   bufferedPosition:
-                            //       positionData?.bufferedPosition ??
-                            //           Duration.zero,
-                            //   onChangeEnd: _player.seek,
-                            // );
-                            return Text("00:00",
-                                style: TextStyle(color: Colors.white));
-                          },
-                        ),
-                      ],
-                    ),
-                    ControlButtons(_player),
-                  ],
-                ),
-                // color: Colors.deepPurple,
-              ),
-              width: double.infinity,
-            )),
-          )
-        ],
+                width: double.infinity,
+              )),
+            )
+          ],
+        ),
       ),
     );
   }
